@@ -13,6 +13,8 @@ import Data.Functor (($>), (<&>))
 import Control.Monad (void)
 import Text.Parsec.Expr
 import GHC.Float (double2Float)
+import Data.Maybe (fromMaybe, fromJust)
+import qualified Data.Numbers.FloatingHex as FH
 
 parse_CompUnit :: Parser CompUnit
 parse_CompUnit = CompUnit <$> many1 ((try parse_Decl <&> TLDecl) <|> (try parse_FuncDef <&> TLFun))
@@ -210,7 +212,96 @@ parse_IntConst :: Parser Integer
 parse_IntConst = try parse_Integer_hex <|> try parse_Integer_octal <|> parse_Integer_decimal
 
 parse_FloatConst :: Parser Float
-parse_FloatConst = double2Float <$> P.float lexer -- TODO: parse float instead of converting
+parse_FloatConst =
+    try parse_Float_Hex <|> parse_Float_Decimal
+
+parse_Float_Hex1 :: Parser Float
+parse_Float_Hex1 = do
+    _ <- char '0' >> oneOf "xX"
+    frac <- parse_Float_Fractional_Constant_Hex
+    exponent_ <- parse_Float_Exponent_Bin
+    pure $ fromJust $ FH.readHFloat $ "0x" ++ frac ++ exponent_
+
+parse_Float_Hex2 :: Parser Float
+parse_Float_Hex2 = do
+    _ <- char '0' >> oneOf "xX"
+    digits <- parse_Float_DigitSeq_Hex
+    exponent_ <- parse_Float_Exponent_Bin
+    pure $ fromJust $ FH.readHFloat $ "0x" ++ digits ++ exponent_
+
+parse_Float_Hex :: Parser Float
+parse_Float_Hex = do
+    try parse_Float_Hex1 <|> parse_Float_Hex2
+
+parse_Float_Exponent_Bin :: Parser String
+parse_Float_Exponent_Bin = do
+    _ <- P.lexeme lexer (oneOf "pP")
+    sign <- optionMaybe $ P.lexeme lexer (oneOf "+-")
+    digits <- parse_Float_DigitSeq
+    pure $ "p" ++ (fromMaybe '+' sign : digits)
+
+parse_Float_Fractional_Constant1_Hex :: Parser String
+parse_Float_Fractional_Constant1_Hex = do
+    pre <- optionMaybe parse_Float_DigitSeq_Hex
+    _ <- P.dot lexer
+    post <- parse_Float_DigitSeq_Hex
+    pure $ fromMaybe "0" pre ++ ('.' : post)
+
+parse_Float_Fractional_Constant2_Hex :: Parser String
+parse_Float_Fractional_Constant2_Hex = do
+    pre <- parse_Float_DigitSeq_Hex
+    _ <- P.dot lexer
+    pure $ pre ++ ".0"
+
+parse_Float_Fractional_Constant_Hex :: Parser String
+parse_Float_Fractional_Constant_Hex =
+    try parse_Float_Fractional_Constant1_Hex <|> parse_Float_Fractional_Constant2_Hex
+
+parse_Float_Decimal1 :: Parser Float
+parse_Float_Decimal1 = do
+    frac <- parse_Float_Fractional_Constant
+    exponent_ <- optionMaybe parse_Float_Exponent
+    pure $ read $ frac ++ fromMaybe "" exponent_
+
+parse_Float_Decimal2 :: Parser Float
+parse_Float_Decimal2 = do
+    digits <- parse_Float_DigitSeq
+    exponent_ <- parse_Float_Exponent
+    pure $ read $ digits ++ exponent_
+
+parse_Float_Decimal :: Parser Float
+parse_Float_Decimal = do
+    try parse_Float_Decimal1 <|> parse_Float_Decimal2
+
+parse_Float_Exponent :: Parser String
+parse_Float_Exponent = do
+    _ <- P.lexeme lexer (oneOf "eE")
+    sign <- optionMaybe $ P.lexeme lexer (oneOf "+-")
+    digits <- parse_Float_DigitSeq
+    pure $ "e" ++ (fromMaybe '+' sign : digits)
+
+parse_Float_Fractional_Constant1 :: Parser String
+parse_Float_Fractional_Constant1 = do
+    pre <- optionMaybe parse_Float_DigitSeq
+    _ <- P.dot lexer
+    post <- parse_Float_DigitSeq
+    pure $ fromMaybe "0" pre ++ ('.' : post)
+
+parse_Float_Fractional_Constant2 :: Parser String
+parse_Float_Fractional_Constant2 = do
+    pre <- parse_Float_DigitSeq
+    _ <- P.dot lexer
+    pure $ pre ++ ".0"
+
+parse_Float_Fractional_Constant :: Parser String
+parse_Float_Fractional_Constant =
+    try parse_Float_Fractional_Constant1 <|> parse_Float_Fractional_Constant2
+
+parse_Float_DigitSeq :: Parser String
+parse_Float_DigitSeq = P.lexeme lexer $ many1 digit
+
+parse_Float_DigitSeq_Hex :: Parser String
+parse_Float_DigitSeq_Hex = P.lexeme lexer $ many1 hexDigit
 
 lexer = P.makeTokenParser sysy_lang
 
