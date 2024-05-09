@@ -16,28 +16,36 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
-    - uses: actions/setup-haskell@v1
+    # - uses: actions/setup-haskell@v1
+    #   with:
+    #     ghc-version: '9.6.4'
+    #     cabal-version: '2.2'
+        
+    - name: Setup Haskell
+      # You may pin to the exact commit or the version.
+      # uses: haskell-actions/setup@ca7ecf7b0c7a4300227b1ab05cda52bf019c174b
+      uses: haskell-actions/setup@v2.7.0
       with:
-        ghc-version: '9.6.4'
-        cabal-version: '2.2'
+        # Version of GHC to use. If set to "latest", it will always get the latest stable version. If set to "head", it will always get the latest build of GHC.
+        ghc-version: 9.6.4
+        # Version of Cabal to use. If set to "latest", it will always get the latest stable version. If set to "head", it will always get the latest build of cabal.
+        # cabal-version: # optional, default is latest
+        # Version of Stack to use. If set to "latest", it will always get the latest stable version.
+        stack-version: 2.13.1
+        # If specified, will setup Stack.
+        enable-stack: true
+        # If specified, enable-stack must be set. Prevents installing GHC and Cabal globally.
+        stack-no-global: true
+        # If specified, enable-stack must be set. Will run stack setup to install the specified GHC.
+        stack-setup-ghc: true
+        # Set to `false` to prevent `cabal update` from being run.
+        cabal-update: true
+        # A release channel URL to add to ghcup via `ghcup config add-release-channel`.
+        # ghcup-release-channel: # optional
+        # If specified, disables match messages from GHC as GitHub CI annotations.
+        # disable-matcher: # optional
 
-    - name: Cache
-      uses: actions/cache@v3
-      env:
-        cache-name: cache-cabal
-      with:
-        path: ~/.cabal
-        key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/*.cabal') }}-${{ hashFiles('**/cabal.project') }}
-        restore-keys: |
-          ${{ runner.os }}-build-${{ env.cache-name }}-
-          ${{ runner.os }}-build-
-          ${{ runner.os }}-
-
-    - name: Install dependencies
-      run: |
-        cabal update
-        cabal build --only-dependencies --enable-tests --enable-benchmarks
     - name: Build
-      run: cabal build --enable-tests --enable-benchmarks all
+      run: stack build
     - name: Run tests
-      run: cabal test all
+      run: stack test
