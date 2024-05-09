@@ -62,3 +62,4 @@ tests:
     - sysy-hs
     - hspec
     - directory
+    - deepseq
