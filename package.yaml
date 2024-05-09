@@ -48,6 +48,7 @@ executables:
     - -with-rtsopts=-N
     dependencies:
     - sysy-hs
+    - directory
 
 tests:
   sysy-hs-test:
@@ -59,3 +60,5 @@ tests:
     - -with-rtsopts=-N
     dependencies:
     - sysy-hs
+    - hspec
+    - directory

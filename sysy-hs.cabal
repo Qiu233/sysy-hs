@@ -53,6 +53,7 @@ executable sysy-hs-exe
   build-depends:
       FloatingHex
     , base >=4.7 && <5
+    , directory
     , parsec
     , sysy-hs
   default-language: Haskell2010
@@ -70,6 +71,8 @@ test-suite sysy-hs-test
   build-depends:
       FloatingHex
     , base >=4.7 && <5
+    , directory
+    , hspec
     , parsec
     , sysy-hs
   default-language: Haskell2010

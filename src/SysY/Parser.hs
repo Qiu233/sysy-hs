@@ -1,9 +1,8 @@
-{-# LANGUAGE TypeApplications #-}
-
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# HLINT ignore "Use camelCase" #-}
 {-# HLINT ignore "Use <$>" #-}
 {-# OPTIONS_GHC -Wno-missing-signatures #-}
+{-# OPTIONS_GHC -Wno-missing-export-lists #-}
 module SysY.Parser where
 import Text.Parsec
 import Text.Parsec.String
@@ -12,12 +11,11 @@ import qualified Text.Parsec.Token as P
 import Data.Functor (($>), (<&>))
 import Control.Monad (void)
 import Text.Parsec.Expr
-import GHC.Float (double2Float)
 import Data.Maybe (fromMaybe, fromJust)
 import qualified Data.Numbers.FloatingHex as FH
 
 parse_CompUnit :: Parser CompUnit
-parse_CompUnit = CompUnit <$> many1 ((try parse_Decl <&> TLDecl) <|> (try parse_FuncDef <&> TLFun))
+parse_CompUnit = CompUnit <$> (P.whiteSpace lexer *> many1 ((try (parse_Decl <* notFollowedBy (P.lexeme lexer (char '('))) <&> TLDecl) <|> (parse_FuncDef <&> TLFun)) <* eof)
 
 parse_Decl :: Parser Decl
 parse_Decl = (try parse_ConstDecl <&> DeclConst) <|> (parse_VarDecl <&> DeclVar)
@@ -25,7 +23,7 @@ parse_Decl = (try parse_ConstDecl <&> DeclConst) <|> (parse_VarDecl <&> DeclVar)
 parse_ConstDecl :: Parser ConstDecl
 parse_ConstDecl = do
     reserved "const"
-    ConstDecl <$> parse_BType <*> commaSep1 parse_ConstDef
+    ConstDecl <$> parse_BType <*> (commaSep1 parse_ConstDef <* semi)
 
 parse_BType :: Parser BType
 parse_BType =
@@ -162,7 +160,7 @@ parse_PrimaryExp = do
     <|> (try parse_LVal <&> ExpLVal)
     <|> (parse_Number <&> ExpNum)
 
-parse_Number :: Parser Number
+parse_Number :: Parser Number -- TODO: improve error message
 parse_Number = (try parse_FloatConst <&> FloatConst) <|> (parse_IntConst <&> IntConst)
 
 parse_UnaryExp_Call :: Parser Exp
@@ -182,10 +180,10 @@ sysy_lang = P.LanguageDef {
         P.nestedComments = False,
         P.identStart = letter <|> char '_',
         P.identLetter = alphaNum <|> char '_',
-        P.opStart = oneOf "",
-        P.opLetter = oneOf "",
+        P.opStart = oneOf "<>=&|!",
+        P.opLetter = oneOf "=&|",
         P.reservedNames = ["void", "int", "float", "const", "if", "else", "while", "break", "return"],
-        P.reservedOpNames = ["+", "-", "*", "/", "%", "==", "!=", "<", ">", "<=", ">=", "&&", "||"], -- assignment
+        P.reservedOpNames = ["+", "-", "*", "/", "%", "="],
         P.caseSensitive = True
     }
 
@@ -212,8 +210,7 @@ parse_IntConst :: Parser Integer
 parse_IntConst = try parse_Integer_hex <|> try parse_Integer_octal <|> parse_Integer_decimal
 
 parse_FloatConst :: Parser Float
-parse_FloatConst =
-    try parse_Float_Hex <|> parse_Float_Decimal
+parse_FloatConst = P.lexeme lexer (try parse_Float_Hex <|> parse_Float_Decimal)
 
 parse_Float_Hex1 :: Parser Float
 parse_Float_Hex1 = do
@@ -235,8 +232,8 @@ parse_Float_Hex = do
 
 parse_Float_Exponent_Bin :: Parser String
 parse_Float_Exponent_Bin = do
-    _ <- P.lexeme lexer (oneOf "pP")
-    sign <- optionMaybe $ P.lexeme lexer (oneOf "+-")
+    _ <- oneOf "pP"
+    sign <- optionMaybe $ oneOf "+-"
     digits <- parse_Float_DigitSeq
     pure $ "p" ++ (fromMaybe '+' sign : digits)
 
@@ -275,8 +272,8 @@ parse_Float_Decimal = do
 
 parse_Float_Exponent :: Parser String
 parse_Float_Exponent = do
-    _ <- P.lexeme lexer (oneOf "eE")
-    sign <- optionMaybe $ P.lexeme lexer (oneOf "+-")
+    _ <- oneOf "eE"
+    sign <- optionMaybe $ oneOf "+-"
     digits <- parse_Float_DigitSeq
     pure $ "e" ++ (fromMaybe '+' sign : digits)
 
@@ -298,10 +295,10 @@ parse_Float_Fractional_Constant =
     try parse_Float_Fractional_Constant1 <|> parse_Float_Fractional_Constant2
 
 parse_Float_DigitSeq :: Parser String
-parse_Float_DigitSeq = P.lexeme lexer $ many1 digit
+parse_Float_DigitSeq = many1 digit
 
 parse_Float_DigitSeq_Hex :: Parser String
-parse_Float_DigitSeq_Hex = P.lexeme lexer $ many1 hexDigit
+parse_Float_DigitSeq_Hex = many1 hexDigit
 
 lexer = P.makeTokenParser sysy_lang
 
