@@ -1,11 +1,21 @@
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE FunctionalDependencies, MultiParamTypeClasses, AllowAmbiguousTypes #-}
+{-# LANGUAGE FunctionalDependencies, AllowAmbiguousTypes #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE KindSignatures #-}
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+{-# HLINT ignore "Unused LANGUAGE pragma" #-}
+{-# OPTIONS_GHC -Wno-missing-export-lists #-}
+-----------------------------------------------------------------------------
+-- |
+-- This module aims to build homomorphism between AST and its annotated versions.
+-- This is especially useful to make the "core" AST concise as well as 
+-- to easily annotate nodes with additional info.
+-- TODO: implement inversion of annotation, i.e. unlift
+-----------------------------------------------------------------------------
 module SysY.AST.TH where
 
 
@@ -14,14 +24,18 @@ import Data.List (group, sort)
 
 import SysY.AST.Basic
 import Control.Monad (replicateM)
-import Polysemy
-import Data.Functor.Identity (Identity)
 import Data.Maybe (catMaybes)
 
 
 annotateDerivings :: [DerivClause]
 annotateDerivings = [DerivClause Nothing [ConT ''Eq, ConT ''Show]]
 
+-- | `makeAnnoTypes p a ts cls lift_func` makes annotated types of all AST types,
+-- with types in `ts` annotated by an additional field of type `a`, prepended to fields.
+-- 
+-- Caller should guarantee:
+-- * that `cls` is of kind `* -> * -> *`, and
+-- * that `(cls a b, Traversable t) => cls (t a) (t b)` be implemented by caller if required by fields.
 makeAnnoTypes :: String -> Name -> [Name] -> Name -> Name -> Q [Dec]
 makeAnnoTypes prefix anno_type_name annotated_ lift_class_name lift_func_name = do
     anno_type <- reify anno_type_name
@@ -100,6 +114,7 @@ makeAnnoTypes prefix anno_type_name annotated_ lift_class_name lift_func_name = 
             pure $ Clause [pats] (NormalB doe) []
         genHomAnno t = fail $ "Only normal constructor is supported, found " ++ show t
 
+        -- wasted early version, should be rewritten
         -- genHomDeanno :: Con -> Q Clause
         -- genHomDeanno (NormalC cname field_types) = do
         --     let name = prefixed cname

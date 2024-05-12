@@ -29,7 +29,6 @@ library
       SysY.AST
       SysY.AST.Basic
       SysY.AST.TH
-      SysY.Compiler
       SysY.Parser
       SysY.TypeCheck
   other-modules:

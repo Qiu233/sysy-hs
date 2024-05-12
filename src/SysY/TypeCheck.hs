@@ -41,6 +41,7 @@ class TypeInfer a b where
 instance (Traversable t, TypeInfer a b) => TypeInfer (t a) (t b) where
     type_infer = mapM type_infer
 
+-- annotate `Exp` with TermType, with lifting TypeClass and corresponding polymorphic function
 makeAnnoTypes "Typed" ''TermType [''Exp] ''TypeInfer 'type_infer
 
 instance TypeInfer Exp TypedExp where
@@ -64,31 +65,6 @@ change_type_of_typed_exp (TypedExpNum _ x) t = TypedExpNum t x
 change_type_of_typed_exp (TypedExpOpUnary _ op oprd) t = TypedExpOpUnary t op oprd
 change_type_of_typed_exp (TypedExpOpBinary _ op lhs rhs) t = TypedExpOpBinary t op lhs rhs
 change_type_of_typed_exp (TypedExpCall _ name args) t = TypedExpCall t name args
-
-op2typed :: Optr -> TypedOptr
-op2typed Plus = TypedPlus
-op2typed Minus = TypedMinus
-op2typed Flip = TypedFlip
-op2typed Mul = TypedMul
-op2typed Div = TypedDiv
-op2typed Mod = TypedMod
-op2typed Lt = TypedLt
-op2typed Gt = TypedGt
-op2typed Le = TypedLe
-op2typed Ge = TypedGe
-op2typed Eq = TypedEq
-op2typed Ne = TypedNe
-op2typed LAnd = TypedLAnd
-op2typed LOr = TypedLOr
-
--- exp_any :: Exp -> TypedExp
--- exp_any (ExpLVal l) = TypedExpLVal TermAny l
--- exp_any (ExpNum n) = TypedExpNum TermAny n
--- exp_any (ExpOpUnary optr e) = TypedExpOpUnary TermAny optr (exp_any e)
--- exp_any (ExpOpBinary optr lhs rhs) = TypedExpOpBinary TermAny optr (exp_any lhs) (exp_any rhs)
--- exp_any (ExpCall name args) = TypedExpCall TermAny name (map exp_any args)
-
-
 
 arith_op :: [Optr]
 arith_op = [Plus, Minus, Mul, Div]
@@ -141,7 +117,8 @@ typeInfer (ExpNum (IntConst i)) = pure $ TypedExpNum (TermBType SyInt) (TypedInt
 typeInfer (ExpNum (FloatConst f)) = pure $ TypedExpNum (TermBType SyFloat) (TypedFloatConst f)
 typeInfer (ExpOpUnary op oprd) = do
     oprd_ <- typeInfer oprd
-    let val t = pure $ TypedExpOpUnary t (op2typed op) oprd_
+    op_ <- type_infer op
+    let val t = pure $ TypedExpOpUnary t op_ oprd_
     case type_of_typed_exp oprd_ of
         TermAny -> val TermAny
         TermBType SyInt -> val (TermBType SyInt)
@@ -161,7 +138,8 @@ typeInfer (ExpOpUnary op oprd) = do
 typeInfer (ExpOpBinary op lhs rhs) = do
     lhs_ <- typeInfer lhs
     rhs_ <- typeInfer rhs
-    let val t = pure $ TypedExpOpBinary t (op2typed op) lhs_ rhs_
+    op_ <- type_infer op
+    let val t = pure $ TypedExpOpBinary t op_ lhs_ rhs_
     case (type_of_typed_exp lhs_, type_of_typed_exp rhs_) of
         (TermAny, _) -> val TermAny
         (_, TermAny) -> val TermAny
