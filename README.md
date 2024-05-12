@@ -9,5 +9,7 @@ Haskell真的非常适合写这种项目，例如Parser只用了一晚上就写�
 Work In Progress.
 
 - [x] Parser
+- [ ] Static Analysis
+  - [x] Type Checking (almost done)
 - [ ] LLVM backend
 - [ ] Optimizations
