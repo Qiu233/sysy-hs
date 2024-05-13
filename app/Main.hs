@@ -1,6 +1,6 @@
 module Main (main) where
 
-import Lib
+import SysY
 import Text.Parsec
 import System.Directory
 

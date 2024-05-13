@@ -1,6 +1,5 @@
 {-# LANGUAGE TemplateHaskell #-}
 module SysY.AST.Basic where
-import qualified Language.Haskell.TH.Syntax
 
 type Ident = String
 
@@ -9,17 +8,18 @@ data Decl =
     DeclVar VarDecl
     deriving (Eq, Show)
 
+-- TODO: can we flatten the defs?
 data ConstDecl = ConstDecl BType [ConstDef]
     deriving (Eq, Show)
 
 data BType = BInt | BFloat
     deriving (Eq, Show)
 
-data ConstDef = ConstDef Ident [Exp] ConstInitVal
+data ConstDef = ConstDef Ident [TypedExp] ConstInitVal
     deriving (Eq, Show)
 
 data ConstInitVal =
-    ConstInitExp Exp |
+    ConstInitExp TypedExp |
     ConstInitArray [ConstInitVal]
     deriving (Eq, Show)
 
@@ -27,12 +27,12 @@ data VarDecl = VarDecl BType [VarDef]
     deriving (Eq, Show)
 
 data VarDef =
-    VarDefUninit Ident [Exp] |
-    VarDefInit Ident [Exp] InitVal
+    VarDefUninit Ident [TypedExp] |
+    VarDefInit Ident [TypedExp] InitVal
     deriving (Eq, Show)
 
 data InitVal =
-    InitValExp Exp |
+    InitValExp TypedExp |
     InitValArray [InitVal]
     deriving (Eq, Show)
 
@@ -42,7 +42,7 @@ data FuncDef = FuncDef FuncType Ident [FuncFParam] Block
 data FuncType = FVoid | FInt | FFloat
     deriving (Eq, Show)
 
-data FuncFParam = FuncFParam BType Ident Int [Exp]
+data FuncFParam = FuncFParam BType Ident Int [TypedExp]
     deriving (Eq, Show)
 
 newtype Block = Block [BlockItem]
@@ -52,17 +52,17 @@ data BlockItem = BlockItemDecl Decl | BlockItemStmt Stmt
     deriving (Eq, Show)
 
 data Stmt =
-    StmtLVal LVal Exp |
-    StmtExp (Maybe Exp) |
+    StmtLVal LVal TypedExp |
+    StmtExp (Maybe TypedExp) |
     StmtBlock Block |
-    StmtIf Exp Stmt (Maybe Stmt) |
-    StmtWhile Exp Stmt |
+    StmtIf TypedExp Stmt (Maybe Stmt) |
+    StmtWhile TypedExp Stmt |
     StmtBreak |
     StmtContinue |
-    StmtReturn (Maybe Exp)
+    StmtReturn (Maybe TypedExp)
     deriving (Eq, Show)
 
-data LVal = LVal Ident [Exp]
+data LVal = LVal Ident [TypedExp]
     deriving (Eq, Show)
 
 data Number =
@@ -70,12 +70,27 @@ data Number =
     FloatConst Float
     deriving (Eq, Show)
 
+
+data TermType
+    -- when type inference fails or the type 
+    -- doesn't matter in terms of type check
+    = TermAny
+    | TermBType BType
+    | TermArray BType [Integer]
+    -- the special type `type[][a][b]...`
+    | TermUArray BType [Integer]
+    -- Function has no type in SysY
+    --- | TermFunc SysYType [SysYType]
+    deriving (Eq, Show)
+    
+type TypedExp = (Maybe TermType, Exp)
+
 data Exp =
     ExpLVal LVal |
     ExpNum Number |
-    ExpOpUnary Optr Exp |
-    ExpOpBinary Optr Exp Exp |
-    ExpCall Ident [Exp]
+    ExpOpUnary Optr TypedExp |
+    ExpOpBinary Optr TypedExp TypedExp |
+    ExpCall Ident [TypedExp]
     deriving (Eq, Show)
 
 data Optr =
@@ -92,7 +107,7 @@ data TopLevel = TLDecl Decl | TLFun FuncDef
 newtype CompUnit = CompUnit [TopLevel]
     deriving (Eq, Show)
 
-astTypes :: [Language.Haskell.TH.Syntax.Name]
-astTypes = [''Decl, ''ConstDecl, ''BType, ''ConstDef, ''ConstInitVal, ''VarDecl, 
-            ''VarDef, ''InitVal, ''FuncDef, ''FuncType, ''FuncFParam, ''Block,
-            ''BlockItem, ''Stmt, ''LVal, ''Number, ''Exp, ''Optr, ''TopLevel, ''CompUnit]
+-- astTypes :: [Language.Haskell.TH.Syntax.Name]
+-- astTypes = [''Decl, ''ConstDecl, ''BType, ''ConstDef, ''ConstInitVal, ''VarDecl, 
+--             ''VarDef, ''InitVal, ''FuncDef, ''FuncType, ''FuncFParam, ''Block,
+--             ''BlockItem, ''Stmt, ''LVal, ''Number, ''Exp, ''Optr, ''TopLevel, ''CompUnit]

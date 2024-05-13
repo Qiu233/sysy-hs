@@ -3,6 +3,7 @@
 {-# HLINT ignore "Use <$>" #-}
 {-# OPTIONS_GHC -Wno-missing-signatures #-}
 {-# OPTIONS_GHC -Wno-missing-export-lists #-}
+{-# LANGUAGE TupleSections #-}
 module SysY.Parser where
 import Text.Parsec
 import Text.Parsec.String
@@ -138,10 +139,10 @@ parse_Stmt = do
     <|> try parse_Stmt_LVal
     <|> parse_Stmt_Exp
 
-parse_Exp :: Parser Exp
+parse_Exp :: Parser TypedExp
 parse_Exp = buildExpressionParser (take 3 table) parse_PrimaryExp
 
-parse_Cond :: Parser Exp
+parse_Cond :: Parser TypedExp
 parse_Cond = buildExpressionParser table parse_PrimaryExp
 
 parse_LVal :: Parser LVal
@@ -150,26 +151,26 @@ parse_LVal = do
     indexers <- parse_arr_indexers
     pure $ LVal name indexers
 
-parse_PrimaryExp_parens :: Parser Exp
+parse_PrimaryExp_parens :: Parser TypedExp
 parse_PrimaryExp_parens = parens parse_Exp
 
-parse_PrimaryExp :: Parser Exp
+parse_PrimaryExp :: Parser TypedExp
 parse_PrimaryExp = do
     try parse_PrimaryExp_parens
     <|> try parse_UnaryExp_Call
-    <|> (try parse_LVal <&> ExpLVal)
-    <|> (parse_Number <&> ExpNum)
+    <|> (try parse_LVal <&> (Nothing, ) . ExpLVal)
+    <|> (parse_Number <&> (Nothing, ) . ExpNum)
 
 parse_Number :: Parser Number -- TODO: improve error message
 parse_Number = (try parse_FloatConst <&> FloatConst) <|> (parse_IntConst <&> IntConst)
 
-parse_UnaryExp_Call :: Parser Exp
+parse_UnaryExp_Call :: Parser TypedExp
 parse_UnaryExp_Call = do
     name <- parse_Ident
     rparams <- parens parse_FuncRParams
-    pure $ ExpCall name rparams
+    pure $ (Nothing, ExpCall name rparams)
 
-parse_FuncRParams :: Parser [Exp]
+parse_FuncRParams :: Parser [TypedExp]
 parse_FuncRParams = commaSep parse_Exp
 
 sysy_lang :: P.LanguageDef st
@@ -190,7 +191,7 @@ sysy_lang = P.LanguageDef {
 parse_assign_eq_op :: Parser ()
 parse_assign_eq_op = void $ P.lexeme lexer $ char '='
 
-parse_arr_indexers :: Parser [Exp]
+parse_arr_indexers :: Parser [TypedExp]
 parse_arr_indexers = many $ brackets parse_Exp
 
 parse_Integer_decimal :: Parser Integer
@@ -314,13 +315,16 @@ commaSep1 = P.commaSep1 lexer
 semi = P.semi lexer
 reservedOp = P.reservedOp lexer
 
-table   = [[prefix "+" id, prefix "-" (ExpOpUnary Minus), prefix "!" (ExpOpUnary Flip) ]
-        , [binary "*" (ExpOpBinary Mul) AssocLeft, binary "/" (ExpOpBinary Div) AssocLeft, binary "%" (ExpOpBinary Mod) AssocLeft ]
-        , [binary "+" (ExpOpBinary Plus) AssocLeft, binary "-" (ExpOpBinary Minus) AssocLeft ]
-        , [binary "<" (ExpOpBinary Lt) AssocLeft, binary ">" (ExpOpBinary Gt) AssocLeft, binary "<=" (ExpOpBinary Le) AssocLeft, binary ">=" (ExpOpBinary Ge) AssocLeft ]
-        , [binary "==" (ExpOpBinary Eq) AssocLeft, binary "!=" (ExpOpBinary Ne) AssocLeft ]
-        , [binary "&&" (ExpOpBinary LAnd) AssocLeft ]
-        , [binary "||" (ExpOpBinary LOr) AssocLeft ]
+op_u o t = (Nothing, ExpOpUnary o t)
+op_b o t1 t2 = (Nothing, ExpOpBinary o t1 t2)
+
+table   = [[prefix "+" id, prefix "-" (op_u Minus), prefix "!" (op_u Flip) ]
+        , [binary "*" (op_b Mul) AssocLeft, binary "/" (op_b Div) AssocLeft, binary "%" (op_b Mod) AssocLeft ]
+        , [binary "+" (op_b Plus) AssocLeft, binary "-" (op_b Minus) AssocLeft ]
+        , [binary "<" (op_b Lt) AssocLeft, binary ">" (op_b Gt) AssocLeft, binary "<=" (op_b Le) AssocLeft, binary ">=" (op_b Ge) AssocLeft ]
+        , [binary "==" (op_b Eq) AssocLeft, binary "!=" (op_b Ne) AssocLeft ]
+        , [binary "&&" (op_b LAnd) AssocLeft ]
+        , [binary "||" (op_b LOr) AssocLeft ]
         ]
 
 binary name fun = Infix (do { reservedOp name; return fun })

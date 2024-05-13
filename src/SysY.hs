@@ -1,9 +1,9 @@
-module Lib(
+module SysY(
     module SysY.AST,
     module SysY.Parser,
-    module SysY.TypeCheck
+    module SysY.StaticAnalysis
     ) where
 
 import SysY.AST
 import SysY.Parser
-import SysY.TypeCheck
+import SysY.StaticAnalysis
