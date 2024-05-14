@@ -8,8 +8,7 @@ import Polysemy
 -- data SysYBType = SyInt | SyFloat
 --     deriving (Eq, Show)
 
-
-data SymInfo = SymInfo Ident TermType
+data SymInfo = SymInfo Ident TermType Bool
 data FuncInfo = FuncInfo Ident TermType [TermType]
 
 data SAEffects m a where

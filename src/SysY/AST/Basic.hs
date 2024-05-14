@@ -1,5 +1,6 @@
 {-# LANGUAGE TemplateHaskell #-}
 module SysY.AST.Basic where
+import Data.Maybe (isJust)
 
 type Ident = String
 
@@ -18,22 +19,17 @@ data BType = BInt | BFloat
 data ConstDef = ConstDef Ident [TypedExp] ConstInitVal
     deriving (Eq, Show)
 
-data ConstInitVal =
-    ConstInitExp TypedExp |
-    ConstInitArray [ConstInitVal]
-    deriving (Eq, Show)
-
 data VarDecl = VarDecl BType [VarDef]
     deriving (Eq, Show)
 
 data VarDef =
     VarDefUninit Ident [TypedExp] |
-    VarDefInit Ident [TypedExp] InitVal
+    VarDefInit Ident [TypedExp] ConstInitVal
     deriving (Eq, Show)
 
 data InitVal =
     InitValExp TypedExp |
-    InitValArray [InitVal]
+    InitValArray [ConstInitVal]
     deriving (Eq, Show)
 
 data FuncDef = FuncDef FuncType Ident [FuncFParam] Block
@@ -76,14 +72,26 @@ data TermType
     -- doesn't matter in terms of type check
     = TermAny
     | TermBType BType
-    | TermArray BType [Integer]
-    -- the special type `type[][a][b]...`
-    | TermUArray BType [Integer]
-    -- Function has no type in SysY
-    --- | TermFunc SysYType [SysYType]
+    | TermArray BType [Maybe Integer]
     deriving (Eq, Show)
     
 type TypedExp = (Maybe TermType, Exp)
+
+data ConstVal
+    = ConstValInt Integer
+    | ConstValFloat Float
+    | ConstValArray [ConstVal] -- interpresentation is dependent on type hint
+    deriving (Eq, Show)
+
+data ConstInfo = ConstInfo (Maybe ConstVal)
+    deriving (Eq, Show)
+type ConstInitVal = (ConstInfo, InitVal)
+
+constVal :: ConstInitVal -> Maybe ConstVal
+constVal (ConstInfo v, _) = v
+
+hasConst :: ConstInitVal -> Bool
+hasConst = isJust . constVal
 
 data Exp =
     ExpLVal LVal |

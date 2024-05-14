@@ -36,12 +36,8 @@ parse_ConstDef = do
     name <- parse_Ident
     dimensions <- parse_arr_indexers
     parse_assign_eq_op
-    init_ <- parse_ConstInitVal
+    init_ <- parse_InitVal
     pure $ ConstDef name dimensions init_
-
-parse_ConstInitVal :: Parser ConstInitVal
-parse_ConstInitVal = do
-    (try parse_Exp <&> ConstInitExp) <|> (braces (do commaSep parse_ConstInitVal) <&> ConstInitArray)
 
 parse_VarDecl :: Parser VarDecl
 parse_VarDecl = do
@@ -57,10 +53,10 @@ parse_VarDef = do
     (try parse_assign_eq_op >> (parse_InitVal >>= \init_ -> pure $ VarDefInit name indexers init_))
         <|> pure (VarDefUninit name indexers)
 
-parse_InitVal :: Parser InitVal
+parse_InitVal :: Parser ConstInitVal
 parse_InitVal = do
-    (try parse_Exp <&> InitValExp) <|>
-        (braces (commaSep parse_InitVal) <&> InitValArray)
+    (try parse_Exp <&> (ConstInfo Nothing, ) . InitValExp) <|>
+        (braces (commaSep parse_InitVal) <&> (ConstInfo Nothing, ) . InitValArray)
 
 parse_FuncDef :: Parser FuncDef
 parse_FuncDef = do

@@ -18,9 +18,6 @@ data TypeEffects m a where
 
 makeSem ''TypeEffects
 
-class TypeCheckable a b | a -> b where
-    type_check :: Member TypeEffects r => a -> Sem r b
-
 arith_op :: [Optr]
 arith_op = [Plus, Minus, Mul, Div]
 comp_op :: [Optr]
@@ -61,21 +58,21 @@ typeInfer (Nothing, ExpLVal (LVal name indexers)) = do
                         else do
                             let new_type = TermArray type_ new_dimensions
                             pure $ (new_type, ExpLVal val)
-        TermUArray type_ dimensions -> do
-            if length dimensions + 1 < length indexers
-                then do
-                    typeError "Indexers cannot be more than dimensions of array type"
-                    def
-                else do
-                    if null indexers
-                        then pure $ (carrier_type, ExpLVal val)
-                        else do
-                            let new_dimensions = drop (length indexers - 1) dimensions
-                            if null new_dimensions
-                                then pure $ (TermBType type_, ExpLVal val)
-                                else do
-                                    let new_type = TermArray type_ new_dimensions
-                                    pure $ (new_type, ExpLVal val)
+        -- TermUArray type_ dimensions -> do
+        --     if length dimensions + 1 < length indexers
+        --         then do
+        --             typeError "Indexers cannot be more than dimensions of array type"
+        --             def
+        --         else do
+        --             if null indexers
+        --                 then pure $ (carrier_type, ExpLVal val)
+        --                 else do
+        --                     let new_dimensions = drop (length indexers - 1) dimensions
+        --                     if null new_dimensions
+        --                         then pure $ (TermBType type_, ExpLVal val)
+        --                         else do
+        --                             let new_type = TermArray type_ new_dimensions
+        --                             pure $ (new_type, ExpLVal val)
 
 typeInfer (Nothing, ExpNum (IntConst i)) = pure $ (TermBType BInt, ExpNum (IntConst i))
 typeInfer (Nothing, ExpNum (FloatConst f)) = pure $ (TermBType BFloat, ExpNum (FloatConst f))
@@ -95,9 +92,9 @@ typeInfer (Nothing, ExpOpUnary op oprd) = do
         TermArray _ _ -> do
             typeError $ printf "Operator '%s' cannot be used on array" (show op)
             val TermAny
-        TermUArray _ _ -> do
-            typeError $ printf "Operator '%s' cannot be used on array" (show op)
-            val TermAny
+        -- TermUArray _ _ -> do
+        --     typeError $ printf "Operator '%s' cannot be used on array" (show op)
+        --     val TermAny
 typeInfer (Nothing, ExpOpBinary op lhs rhs) = do
     (ltype, lhs_) <- typeInfer lhs
     (rtype, rhs_) <- typeInfer rhs
@@ -136,12 +133,12 @@ typeInfer (Nothing, ExpOpBinary op lhs rhs) = do
         (_, TermArray _ _) -> do
                 typeError $ printf "Operator '%s' cannot be used on array" (show op)
                 val TermAny
-        (TermUArray _ _, _) -> do
-                typeError $ printf "Operator '%s' cannot be used on array" (show op)
-                val TermAny
-        (_, TermUArray _ _) -> do
-                typeError $ printf "Operator '%s' cannot be used on array" (show op)
-                val TermAny
+        -- (TermUArray _ _, _) -> do
+        --         typeError $ printf "Operator '%s' cannot be used on array" (show op)
+        --         val TermAny
+        -- (_, TermUArray _ _) -> do
+        --         typeError $ printf "Operator '%s' cannot be used on array" (show op)
+        --         val TermAny
 typeInfer (Nothing, ExpCall name args) = do
     func <- findFunction name
     args_ <- mapM typeInfer' args
@@ -173,9 +170,6 @@ typeCheck implicit_conv t (type_, exp_) = do
 typeImplicitConv :: [(TermType, TermType)]
 typeImplicitConv = [(TermBType BInt, TermBType BFloat), (TermBType BFloat, TermBType BInt)]
 
-typeInferCompUnit :: Member TypeEffects r => CompUnit -> Sem r CompUnit
-typeInferCompUnit = undefined
-
 interpretTypeCheckBySAEffects ::
     Member SAEffects r =>
         Sem (TypeEffects ': r) a -> Sem r a
@@ -186,9 +180,8 @@ interpretTypeCheckBySAEffects = interpret \case
         sym <- findSymbol n
         case sym of
             Nothing -> pure TermAny
-            Just (SymInfo _ t) -> pure t
+            Just (SymInfo _ t _) -> pure t
 
-typeCheckInitVal :: Member TypeEffects r => TermType -> InitVal -> Sem r ()
+typeCheckInitVal :: Member TypeEffects r => TermType -> ConstInitVal -> Sem r ()
 typeCheckInitVal = undefined
-typeCheckConstInitVal :: Member TypeEffects r => TermType -> InitVal -> Sem r ()
-typeCheckConstInitVal = undefined
+
