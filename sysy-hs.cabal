@@ -28,12 +28,12 @@ library
       SysY
       SysY.AST
       SysY.AST.Basic
-      SysY.AST.TH
       SysY.Compiler
       SysY.Compiler.Basic
       SysY.Parser
       SysY.StaticAnalysis
       SysY.StaticAnalysis.Basic
+      SysY.StaticAnalysis.NameRes
       SysY.StaticAnalysis.TypeCheck
   other-modules:
       Paths_sysy_hs

@@ -1,7 +1,5 @@
 module SysY.AST (
-    module SysY.AST.Basic,
-    module SysY.AST.TH
+    module SysY.AST.Basic
 ) where
 
-import SysY.AST.TH
 import SysY.AST.Basic

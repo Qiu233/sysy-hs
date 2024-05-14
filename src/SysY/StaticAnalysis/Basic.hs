@@ -14,8 +14,8 @@ data FuncInfo = FuncInfo Ident TermType [TermType]
 data SAEffects m a where
     Warn :: String -> SAEffects m ()
     Error :: String -> SAEffects m ()
-    NewSymTable :: SAEffects m ()
-    ExitSymTable :: SAEffects m ()
+    NewScope :: SAEffects m ()
+    ExitScope :: SAEffects m ()
     NewFunc :: FuncInfo -> SAEffects m ()
     FindFunc :: Ident -> SAEffects m (Maybe FuncInfo)
     NewSymbol :: SymInfo -> SAEffects m ()
