@@ -163,9 +163,12 @@ typeCheck implicit_conv t (type_, exp_) = do
             o <- case type_ of
                 Just type__ -> pure type__
                 Nothing -> fst <$> typeInfer (type_, exp_)
-            unless (not implicit_conv || (o, t) `elem` typeImplicitConv) $ do
-                typeError $ printf "Expected type %s, got %s" (show t) (show o)
-            pure (Just t, exp_) -- return changed so it won't cause too many errors
+            type__ <- if not implicit_conv || (o, t) `elem` typeImplicitConv
+                then pure $ Just t
+                else do
+                    typeError $ printf "Expected type %s, got %s" (show t) (show o)
+                    pure $ Just o -- won't change type if the conversion failed
+            pure (type__, exp_)
 
 typeImplicitConv :: [(TermType, TermType)]
 typeImplicitConv = [(TermBType BInt, TermBType BFloat), (TermBType BFloat, TermBType BInt)]

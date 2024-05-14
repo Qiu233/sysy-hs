@@ -2,13 +2,13 @@
     TemplateHaskell, LambdaCase, BlockArguments, GADTs, FlexibleContexts, 
     TypeOperators, DataKinds, PolyKinds, ScopedTypeVariables #-}
 module SysY.StaticAnalysis.Basic where
-import SysY.AST (Ident, TermType)
+import SysY.AST (Ident, TermType, ConstVal)
 import Polysemy
 
 -- data SysYBType = SyInt | SyFloat
 --     deriving (Eq, Show)
 
-data SymInfo = SymInfo Ident TermType Bool
+data SymInfo = SymInfo Ident TermType (Maybe ConstVal)
 data FuncInfo = FuncInfo Ident TermType [TermType]
 
 data SAEffects m a where

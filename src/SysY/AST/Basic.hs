@@ -83,7 +83,7 @@ data ConstVal
     | ConstValArray [ConstVal] -- interpresentation is dependent on type hint
     deriving (Eq, Show)
 
-data ConstInfo = ConstInfo (Maybe ConstVal)
+newtype ConstInfo = ConstInfo (Maybe ConstVal)
     deriving (Eq, Show)
 type ConstInitVal = (ConstInfo, InitVal)
 
@@ -115,7 +115,3 @@ data TopLevel = TLDecl Decl | TLFun FuncDef
 newtype CompUnit = CompUnit [TopLevel]
     deriving (Eq, Show)
 
--- astTypes :: [Language.Haskell.TH.Syntax.Name]
--- astTypes = [''Decl, ''ConstDecl, ''BType, ''ConstDef, ''ConstInitVal, ''VarDecl, 
---             ''VarDef, ''InitVal, ''FuncDef, ''FuncType, ''FuncFParam, ''Block,
---             ''BlockItem, ''Stmt, ''LVal, ''Number, ''Exp, ''Optr, ''TopLevel, ''CompUnit]
