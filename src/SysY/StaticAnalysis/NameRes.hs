@@ -62,8 +62,8 @@ check_exp (ExpCall name args) = do
     assert_function name
     mapM_ check_typed_exp args
 
-check_block :: Member SAEffects r => Block -> Sem r ()
-check_block (Block items) = withScope $ mapM_ check_block_item items
+check_block_unscoped :: Member SAEffects r => Block -> Sem r ()
+check_block_unscoped (Block items) = mapM_ check_block_item items
     where
         check_block_item (BlockItemDecl decl) = check_decl decl
         check_block_item (BlockItemStmt stmt) = check_stmt stmt
@@ -72,7 +72,7 @@ check_stmt :: Member SAEffects r => Stmt -> Sem r ()
 check_stmt (StmtLVal lval e) = check_lval lval >> check_typed_exp e
 check_stmt (StmtExp Nothing) = pure ()
 check_stmt (StmtExp (Just e)) = check_typed_exp e
-check_stmt (StmtBlock block) = check_block block
+check_stmt (StmtBlock block) = withScope $ check_block_unscoped block
 check_stmt (StmtIf cond then' Nothing) = check_typed_exp cond >> check_stmt then'
 check_stmt (StmtIf cond then' (Just else')) = check_typed_exp cond >> check_stmt then' >> check_stmt else'
 check_stmt (StmtWhile cond do') = check_typed_exp cond >> check_stmt do'
@@ -117,7 +117,7 @@ check_func (FuncDef _ name args block) = do
     new_function name -- insert function symbol so it can be recursive
     withScope $ do -- function scope
         mapM_ check_fparam args
-        check_block block -- block scope
+        check_block_unscoped block -- block scope
 
 check_top_level :: Member SAEffects r => TopLevel -> Sem r ()
 check_top_level (TLDecl decl) = check_decl decl

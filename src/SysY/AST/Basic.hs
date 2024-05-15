@@ -38,6 +38,11 @@ data FuncDef = FuncDef FuncType Ident [FuncFParam] Block
 data FuncType = FVoid | FInt | FFloat
     deriving (Eq, Show)
 
+funcType2TermType :: FuncType -> TermType
+funcType2TermType FVoid = TermVoid
+funcType2TermType FInt = TermBType BInt
+funcType2TermType FFloat = TermBType BFloat
+
 data FuncFParam = FuncFParam BType Ident Int [TypedExp]
     deriving (Eq, Show)
 

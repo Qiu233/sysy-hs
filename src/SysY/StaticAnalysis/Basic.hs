@@ -5,7 +5,7 @@
 {-# LANGUAGE TypeApplications #-}
 module SysY.StaticAnalysis.Basic (
     SAEffects, warn, SysY.StaticAnalysis.Basic.error, withScope, newFunc, findFunc, newSymbol, findSymbol,
-    SymInfo(..), FuncInfo(..), SAContext(..), defaultSAContext, runSAEffectsPure, lib_functions
+    SymInfo(..), FuncInfo(..), SAContext(..), defaultSAContext, runSAEffectsPure, reset_symbols, has_error
 ) where
 import SysY.AST (Ident, TermType, ConstVal, TermType(..), BType(..))
 import Polysemy
@@ -43,6 +43,9 @@ data SAContext = SAContext
     }
 makeLenses ''SAContext
 
+lib_funcs :: [(Ident, FuncInfo)]
+lib_funcs = zip (fmap funcName lib_functions) lib_functions
+
 defaultSAContext :: SAContext
 defaultSAContext = SAContext
     { _warnings = []
@@ -50,7 +53,14 @@ defaultSAContext = SAContext
     , _symbols = [Map.empty] -- top level scope
     , _functions = Map.fromList lib_funcs
     }
-    where lib_funcs = zip (fmap funcName lib_functions) lib_functions
+
+reset_symbols :: State SAContext ()
+reset_symbols = do
+    symbols .= [Map.empty]
+    functions .= Map.fromList lib_funcs
+
+has_error :: State SAContext Bool
+has_error = uses errors (not . Prelude.null)
 
 append_warning :: String -> State SAContext ()
 append_warning w = warnings %= (w <|) -- this version of lens does not have `<|=`
