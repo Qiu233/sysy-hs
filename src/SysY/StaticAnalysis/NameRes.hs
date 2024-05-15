@@ -22,7 +22,7 @@ new_function :: Member SAEffects r => Ident -> Sem r ()
 new_function name = do
     findFunc name >>= \case
         Just _ -> error $ printf "Duplicate declarations of function '%s'" name
-        _ -> newFunc (FuncInfo name Nothing [])
+        _ -> newFunc (FuncInfo name TermAny [])
     -- don't override last function definition
 
 exists_symbol :: Member SAEffects r => Ident -> Sem r Bool

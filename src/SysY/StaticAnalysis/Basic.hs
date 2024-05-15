@@ -15,8 +15,8 @@ import Control.Lens
 
 data SymInfo = SymInfo Ident TermType (Maybe ConstVal)
 data FuncInfo
-    = FuncInfo Ident (Maybe TermType) [TermType]
-    | LibFuncInfo Ident (Maybe TermType) (Maybe [TermType])
+    = FuncInfo Ident TermType [TermType]
+    | LibFuncInfo Ident TermType (Maybe [TermType])
     -- arg types of some lib functions must be checked separately
 
 funcName :: FuncInfo -> Ident
@@ -121,19 +121,18 @@ runSAEffectsPure p = do
 
 lib_functions :: [FuncInfo]
 lib_functions =
-    [ LibFuncInfo "getint"      bint' (Just [])
-    , LibFuncInfo "getch"       bint' (Just [])
-    , LibFuncInfo "getarray"    bint' (Just [bintarr])
-    , LibFuncInfo "putint"    Nothing (Just [bint])
-    , LibFuncInfo "putch"     Nothing (Just [bint])
-    , LibFuncInfo "putarray"  Nothing (Just [bint, bintarr])
-    , LibFuncInfo "putf"      Nothing Nothing -- special case
-    , LibFuncInfo "starttime" Nothing (Just [])
-    , LibFuncInfo "stoptime"  Nothing (Just [])
+    [ LibFuncInfo "getint"    bint     (Just [])
+    , LibFuncInfo "getch"     bint     (Just [])
+    , LibFuncInfo "getarray"  bint     (Just [bintarr])
+    , LibFuncInfo "putint"    TermVoid (Just [bint])
+    , LibFuncInfo "putch"     TermVoid (Just [bint])
+    , LibFuncInfo "putarray"  TermVoid (Just [bint, bintarr])
+    , LibFuncInfo "putf"      TermVoid Nothing -- special case
+    , LibFuncInfo "starttime" TermVoid (Just [])
+    , LibFuncInfo "stoptime"  TermVoid (Just [])
     ]
     where
         bint = TermBType BInt
-        bint' = Just bint
         bintarr = TermArray BInt [Nothing]
 
 

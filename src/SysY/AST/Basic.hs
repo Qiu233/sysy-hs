@@ -68,9 +68,8 @@ data Number =
 
 
 data TermType
-    -- when type inference fails or the type 
-    -- doesn't matter in terms of type check
     = TermAny
+    | TermVoid
     | TermBType BType
     | TermArray BType [Maybe Integer]
     deriving (Eq, Show)
