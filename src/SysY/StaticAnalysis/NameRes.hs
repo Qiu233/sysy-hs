@@ -14,15 +14,15 @@ import Data.Maybe (isJust)
 new_symbol :: Member SAEffects r => Ident -> Sem r ()
 new_symbol name = do
     findSymbol name >>= \case
-        Just (_, False) -> error $ printf "Duplicate declarations of variable '%s'" name
+        Just (_, True) -> error $ printf "Duplicate declarations of variable '%s'" name
         _ -> pure ()
     newSymbol (SymInfo name TermAny Nothing) -- override the last one
 
 new_function :: Member SAEffects r => Ident -> Sem r ()
 new_function name = do
-    findSymbol name >>= \case
-        Just (_, False) -> error $ printf "Duplicate declarations of function '%s'" name
-        _ -> newFunc (FuncInfo name TermAny [])
+    findFunc name >>= \case
+        Just _ -> error $ printf "Duplicate declarations of function '%s'" name
+        _ -> newFunc (FuncInfo name Nothing [])
     -- don't override last function definition
 
 exists_symbol :: Member SAEffects r => Ident -> Sem r Bool
@@ -42,7 +42,6 @@ assert_function name = do
     e <- exists_function name
     unless e $ do
         error $ printf "Function %s is used but not defined" name
-    new_function name -- prevent too many errors
 
 check_lval :: Member SAEffects r => LVal -> Sem r ()
 check_lval (LVal name _) = assert_symbol name

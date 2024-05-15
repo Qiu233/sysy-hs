@@ -39,10 +39,7 @@ func_tests tests = do
                     Left _ -> fail "impossible"
                     Right comp_unit -> do
                         let (es ,_) = static_analysis comp_unit
-                        mapM_ print es
-                        -- temporarily pass CI, because currently we have no runtime library
-                        
-                        -- unless (null es) $ do
-                        --     let errors = intercalate "\n" es
-                        --     fail $ "Static check failed with errors\n" ++ errors
+                        unless (null es) $ do
+                            let errors = intercalate "\n" es
+                            fail $ "Static check failed with errors\n" ++ errors
 

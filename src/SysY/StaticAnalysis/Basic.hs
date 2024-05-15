@@ -5,16 +5,23 @@
 {-# LANGUAGE TypeApplications #-}
 module SysY.StaticAnalysis.Basic (
     SAEffects, warn, SysY.StaticAnalysis.Basic.error, withScope, newFunc, findFunc, newSymbol, findSymbol,
-    SymInfo(..), FuncInfo(..), SAContext(..), defaultSAContext, runSAEffectsPure
+    SymInfo(..), FuncInfo(..), SAContext(..), defaultSAContext, runSAEffectsPure, lib_functions
 ) where
-import SysY.AST (Ident, TermType, ConstVal)
+import SysY.AST (Ident, TermType, ConstVal, TermType(..), BType(..))
 import Polysemy
 import Data.HashMap as Map
 import Control.Monad.State
 import Control.Lens
 
 data SymInfo = SymInfo Ident TermType (Maybe ConstVal)
-data FuncInfo = FuncInfo Ident TermType [TermType]
+data FuncInfo
+    = FuncInfo Ident (Maybe TermType) [TermType]
+    | LibFuncInfo Ident (Maybe TermType) (Maybe [TermType])
+    -- arg types of some lib functions must be checked separately
+
+funcName :: FuncInfo -> Ident
+funcName (FuncInfo name _ _) = name
+funcName (LibFuncInfo name _ _) = name
 
 data SAEffects m a where
     Warn :: String -> SAEffects m ()
@@ -41,8 +48,9 @@ defaultSAContext = SAContext
     { _warnings = []
     , _errors = []
     , _symbols = [Map.empty] -- top level scope
-    , _functions = Map.fromList []
+    , _functions = Map.fromList lib_funcs
     }
+    where lib_funcs = zip (fmap funcName lib_functions) lib_functions
 
 append_warning :: String -> State SAContext ()
 append_warning w = warnings %= (w <|) -- this version of lens does not have `<|=`
@@ -57,8 +65,7 @@ exit_scope = symbols %= tail
 
 new_func :: FuncInfo -> State SAContext ()
 new_func func = do
-    let (FuncInfo name _ _) = func
-    functions %= Map.insert name func
+    functions %= Map.insert (funcName func) func
 -- for unknown reason, lens of `Map` doesn't work, so I must manipulate it by hand
 
 find_func :: Ident -> State SAContext (Maybe FuncInfo)
@@ -72,13 +79,19 @@ new_symbol sym = do
 find_symbol :: Ident -> State SAContext (Maybe (SymInfo, Bool))
 find_symbol name = do
     syms <- use symbols
-    pure $ go syms
+    case syms of
+        [] -> Prelude.error "impossible"
+        m : rem_ -> case Map.lookup name m of
+            Just t -> pure $ Just (t, True)
+            Nothing -> case rem_ of
+                [] -> pure Nothing
+                _ -> pure $ go rem_
     where
         go :: [Map Ident SymInfo] -> Maybe (SymInfo, Bool)
         go [] = Prelude.error "impossible"
         go [m] = case Map.lookup name m of
             Nothing -> Nothing
-            Just t -> Just (t, True)
+            Just t -> Just (t, False)
         go (m : rem_) = case Map.lookup name m of
             Nothing -> go rem_
             Just t -> Just (t, False)
@@ -104,3 +117,23 @@ withScope p = do
 runSAEffectsPure :: Sem '[SAEffects] a -> State SAContext a
 runSAEffectsPure p = do
     runM $ reinterpretSAEffectsByContext @'[] p
+
+
+lib_functions :: [FuncInfo]
+lib_functions =
+    [ LibFuncInfo "getint"      bint' (Just [])
+    , LibFuncInfo "getch"       bint' (Just [])
+    , LibFuncInfo "getarray"    bint' (Just [bintarr])
+    , LibFuncInfo "putint"    Nothing (Just [bint])
+    , LibFuncInfo "putch"     Nothing (Just [bint])
+    , LibFuncInfo "putarray"  Nothing (Just [bint, bintarr])
+    , LibFuncInfo "putf"      Nothing Nothing -- special case
+    , LibFuncInfo "starttime" Nothing (Just [])
+    , LibFuncInfo "stoptime"  Nothing (Just [])
+    ]
+    where
+        bint = TermBType BInt
+        bint' = Just bint
+        bintarr = TermArray BInt [Nothing]
+
+
