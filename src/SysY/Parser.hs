@@ -154,8 +154,8 @@ parse_PrimaryExp :: Parser TypedExp
 parse_PrimaryExp = do
     try parse_PrimaryExp_parens
     <|> try parse_UnaryExp_Call
-    <|> (try parse_LVal <&> (Nothing, ) . ExpLVal)
-    <|> (parse_Number <&> (Nothing, ) . ExpNum)
+    <|> (try parse_LVal <&> RawExp . ExpLVal)
+    <|> (parse_Number <&> RawExp . ExpNum)
 
 parse_Number :: Parser Number -- TODO: improve error message
 parse_Number = (try parse_FloatConst <&> FloatConst) <|> (parse_IntConst <&> IntConst)
@@ -164,7 +164,7 @@ parse_UnaryExp_Call :: Parser TypedExp
 parse_UnaryExp_Call = do
     name <- parse_Ident
     rparams <- parens parse_FuncRParams
-    pure $ (Nothing, ExpCall name rparams)
+    pure $ RawExp $ ExpCall name rparams
 
 parse_FuncRParams :: Parser [TypedExp]
 parse_FuncRParams = commaSep parse_Exp
@@ -311,8 +311,8 @@ commaSep1 = P.commaSep1 lexer
 semi = P.semi lexer
 reservedOp = P.reservedOp lexer
 
-op_u o t = (Nothing, ExpOpUnary o t)
-op_b o t1 t2 = (Nothing, ExpOpBinary o t1 t2)
+op_u o t = RawExp $ ExpOpUnary o t
+op_b o t1 t2 = RawExp $ ExpOpBinary o t1 t2
 
 table   = [[prefix "+" id, prefix "-" (op_u Minus), prefix "!" (op_u Flip) ]
         , [binary "*" (op_b Mul) AssocLeft, binary "/" (op_b Div) AssocLeft, binary "%" (op_b Mod) AssocLeft ]

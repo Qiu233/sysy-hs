@@ -7,6 +7,7 @@ import Polysemy
 import SysY.AST
 import SysY.StaticAnalysis.Basic
 import Prelude hiding (error)
+import qualified Prelude
 import Text.Printf (printf)
 import Control.Monad (unless)
 import Data.Maybe (isJust)
@@ -47,13 +48,15 @@ check_lval :: Member SAEffects r => LVal -> Sem r ()
 check_lval (LVal name _) = assert_symbol name
 
 check_typed_exp :: Member SAEffects r => TypedExp -> Sem r ()
-check_typed_exp = check_exp. snd
+-- check_typed_exp = check_exp. snd
+check_typed_exp (RawExp e) = check_exp e
+check_typed_exp _ = Prelude.error "Impossible. Type checking cannot preced name resolution"
 
 check_exp :: Member SAEffects r => Exp -> Sem r ()
 -- check_exp = \case -- TODO: have different variant definitions
 check_exp (ExpLVal l) = check_lval l
 check_exp (ExpNum _) = pure ()
-check_exp (ExpOpUnary _ (_, oprd)) = check_exp oprd
+check_exp (ExpOpUnary _ oprd) = check_typed_exp oprd
 check_exp (ExpOpBinary _ lhs rhs) = check_typed_exp lhs >> check_typed_exp rhs
 check_exp (ExpCall name args) = do
     assert_function name

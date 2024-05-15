@@ -73,8 +73,13 @@ data TermType
     | TermBType BType
     | TermArray BType [Maybe Integer]
     deriving (Eq, Show)
-    
-type TypedExp = (Maybe TermType, Exp)
+
+-- type TypedExp = (Maybe TermType, Exp)
+data TypedExp
+    = RawExp Exp
+    | TypedExp TermType Exp
+    | ConvExp TermType TypedExp
+    deriving (Eq, Show)
 
 data ConstVal
     = ConstValInt Integer
