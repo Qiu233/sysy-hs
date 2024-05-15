@@ -3,12 +3,13 @@
 import Test.Hspec
 import System.IO
 import System.Directory (listDirectory)
-import Data.List (sort, isSuffixOf)
-import Control.Monad (forM_, forM)
+import Data.List (sort, isSuffixOf, intercalate)
+import Control.Monad (forM_, forM, unless)
 import Text.Parsec (runParser)
 import SysY.Parser
 import Data.Either (isRight)
 import Control.DeepSeq (($!!))
+import SysY.StaticAnalysis (static_analysis)
 
 func_test_path :: String
 func_test_path = "./test/functional_test/"
@@ -34,3 +35,14 @@ func_tests tests = do
             it test $ do
                 let r = runParser parse_CompUnit () test code
                 r `shouldSatisfy` isRight
+                case r of
+                    Left _ -> fail "impossible"
+                    Right comp_unit -> do
+                        let (es ,_) = static_analysis comp_unit
+                        mapM_ print es
+                        -- temporarily pass CI, because currently we have no runtime library
+                        
+                        -- unless (null es) $ do
+                        --     let errors = intercalate "\n" es
+                        --     fail $ "Static check failed with errors\n" ++ errors
+

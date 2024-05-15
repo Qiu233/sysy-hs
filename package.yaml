@@ -27,6 +27,7 @@ dependencies:
 - transformers
 - lens
 - template-haskell
+- hashmap
 - FloatingHex
 
 ghc-options:

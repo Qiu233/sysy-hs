@@ -45,6 +45,7 @@ library
   build-depends:
       FloatingHex
     , base >=4.7 && <5
+    , hashmap
     , lens
     , mtl
     , parsec
@@ -66,6 +67,7 @@ executable sysy-hs-exe
       FloatingHex
     , base >=4.7 && <5
     , directory
+    , hashmap
     , lens
     , mtl
     , parsec
@@ -90,6 +92,7 @@ test-suite sysy-hs-test
     , base >=4.7 && <5
     , deepseq
     , directory
+    , hashmap
     , hspec
     , lens
     , mtl
