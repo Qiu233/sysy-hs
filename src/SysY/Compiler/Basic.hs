@@ -10,6 +10,7 @@ import Polysemy
 data CompilerMessage m a where
     Warn :: String -> CompilerMessage m ()
     Error :: String -> CompilerMessage m ()
+    HasError :: CompilerMessage m Bool
 
 makeSem ''CompilerMessage
 

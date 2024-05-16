@@ -34,6 +34,7 @@ library
       SysY.StaticAnalysis
       SysY.StaticAnalysis.Basic
       SysY.StaticAnalysis.NameRes
+      SysY.StaticAnalysis.Pure
       SysY.StaticAnalysis.TypeCheck
   other-modules:
       Paths_sysy_hs

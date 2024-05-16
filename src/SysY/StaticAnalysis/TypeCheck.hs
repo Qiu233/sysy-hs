@@ -9,7 +9,7 @@ module SysY.StaticAnalysis.TypeCheck (
 import SysY.AST
 import Polysemy
 import Text.Printf (printf)
-import Control.Monad (unless, zipWithM, when)
+import Control.Monad (zipWithM)
 import SysY.StaticAnalysis.Basic as SA
 import Prelude hiding (error)
 import qualified Prelude as Pre
@@ -284,7 +284,7 @@ check_top_level (TLDecl decl) = TLDecl <$> check_decl decl
 check_top_level (TLFun func) = TLFun <$> check_func func
 
 check_comp_unit :: Member SAEffects r => CompUnit -> Sem r CompUnit
-check_comp_unit (CompUnit tops) = CompUnit <$> mapM check_top_level tops
+check_comp_unit (CompUnit tops) = resetSymbols >> CompUnit <$> mapM check_top_level tops
 
 check_stmt :: Member SAEffects r => Stmt -> Sem r Stmt
 check_stmt (StmtLVal lval e) = (StmtLVal . snd <$> check_lval lval) <*> check_typed_exp e

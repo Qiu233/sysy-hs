@@ -9,7 +9,7 @@ import Text.Parsec (runParser)
 import SysY.Parser
 import Data.Either (isRight)
 import Control.DeepSeq (($!!))
-import SysY.StaticAnalysis (static_analysis)
+import SysY.StaticAnalysis (static_analysis_pure)
 
 func_test_path :: String
 func_test_path = "./test/functional_test/"
@@ -38,7 +38,7 @@ func_tests tests = do
                 case r of
                     Left _ -> fail "impossible"
                     Right comp_unit -> do
-                        let (es ,_) = static_analysis comp_unit
+                        let (_, es ,_) = static_analysis_pure comp_unit
                         unless (null es) $ do
                             let errors = intercalate "\n" es
                             fail $ "Static check failed with errors\n" ++ errors

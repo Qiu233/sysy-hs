@@ -11,6 +11,7 @@ import qualified Prelude
 import Text.Printf (printf)
 import Control.Monad (unless)
 import Data.Maybe (isJust)
+import Data.Functor (($>))
 
 new_symbol :: Member SAEffects r => Ident -> Sem r ()
 new_symbol name = do
@@ -123,8 +124,8 @@ check_top_level :: Member SAEffects r => TopLevel -> Sem r ()
 check_top_level (TLDecl decl) = check_decl decl
 check_top_level (TLFun func) = check_func func
 
-check_comp_unit :: Member SAEffects r => CompUnit -> Sem r ()
-check_comp_unit (CompUnit tops) = mapM_ check_top_level tops
+check_comp_unit :: Member SAEffects r => CompUnit -> Sem r CompUnit
+check_comp_unit (CompUnit tops) = resetSymbols >> mapM_ check_top_level tops $> CompUnit tops
 
 
 

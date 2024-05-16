@@ -19,7 +19,7 @@ main = do
     case parsed of
         Left _ -> pure ()
         Right comp_unit -> do
-            let (es, _) = static_analysis comp_unit
+            let (_, es, _) = static_analysis_pure comp_unit
             mapM_ print es
             pure ()
 
