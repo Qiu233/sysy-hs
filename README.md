@@ -10,6 +10,10 @@ Work In Progress.
 
 - [x] Parser
 - [ ] Static Analysis
-  - [x] Type Checking (almost done)
+  - [x] Name Resolution
+  - [x] Type Checking
+  - [ ] Constant Computation (Or a part of data flow analysis?, but const array's dimensions should be resolved right after type checking)
+  - [ ] Control Flow Analysis
+  - [ ] Data Flow Analysis
 - [ ] LLVM backend
 - [ ] Optimizations
